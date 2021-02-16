@@ -25,7 +25,6 @@ class TripAdvisorCrawler:
         print(url)
         page = requests.get(url)
         soup = BeautifulSoup(page.text, 'html.parser')
-
         #find all details
         ct= soup.findAll("div", {"class" : "_2170bBgV"})
         if not ct:
@@ -50,6 +49,7 @@ class TripAdvisorCrawler:
         #Scrape ratings for other values
         resultsTab = soup.find('div', class_='ppr_rup ppr_priv_detail_overview_cards').find('div', class_='ui_columns')
         rateReview = resultsTab.find_all('div', class_='jT_QMHn2')
+
         ratings = []
 
         for rate in rateReview:
@@ -61,7 +61,7 @@ class TripAdvisorCrawler:
 
         #Write data to csv and export to file
         with open(pathToStoreInfo, mode='a', encoding="utf-8") as trip:
-            data_writer = csv.writer(trip, delimiter = ',', quotechar = '"', quoting = csv.QUOTE_MINIMAL)
+            data_writer = csv.writer(trip, delimiter = ',', quotechar = '"', quoting = csv.QUOTE_MINIMAL, lineterminator = "\n")
             print(ratings)
             if len(ratings) == 3:
                 data_writer.writerow([storeName, storeAddress, avgRating, noReviews, cuisineType, priceRange, specialDiet, district, ratings[0], ratings[1], ratings[2], "0"])
@@ -97,7 +97,7 @@ class TripAdvisorCrawler:
             #Export to csv
             try:
                 with open(pathToReviews, mode='a', encoding="utf-8") as trip_data:
-                    data_writer = csv.writer(trip_data, delimiter = ',', quotechar = '"', quoting = csv.QUOTE_MINIMAL)
+                    data_writer = csv.writer(trip_data, delimiter = ',', quotechar = '"', quoting = csv.QUOTE_MINIMAL, lineterminator = "\n")
                     for review in reviews:
                         ratingDate = review.find('span', class_='ratingDate').get('title')
                         text_review = review.find('p', class_='partial_entry')

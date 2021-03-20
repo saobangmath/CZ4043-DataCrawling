@@ -1,6 +1,7 @@
 import requests 
 from bs4 import BeautifulSoup
-import csv 
+import csv
+import pandas as pd
 from selenium import webdriver
 import time
 
@@ -71,6 +72,24 @@ class TripAdvisorCrawler:
 
     def scrapeReviews(self, url, maxNoReviews):
         reviewCount = 0
+        '''
+        form: 
+        {
+            "name" : ...,
+            "location" : ...., 
+            "reviews" : [
+                {
+                    "name" : ...., 
+                    "location" : ...., 
+                    "reviewer" : ...., 
+                    "rating" : ...., 
+                    "reviewText" : ....
+                }
+            ]
+        }
+        '''
+        data = {} # TODO: store all the information related to a restaurant;
+        data["reviews"] = []
         while reviewCount != maxNoReviews:
             #Requests
             driver.get(url)
@@ -94,6 +113,9 @@ class TripAdvisorCrawler:
                 reviews = results.find_all('div', class_='prw_rup prw_reviews_review_resp')
             except Exception:
                 continue
+            data["storeName"] = storeName
+            data["storeLoc"] = storeLoc
+            data["success"] = True
             #Export to csv
             try:
                 with open(pathToReviews, mode='a', encoding="utf-8") as trip_data:
@@ -109,16 +131,28 @@ class TripAdvisorCrawler:
                         reviewerUsername = reviewerUsername.select('div > div')[0].get_text(strip=True)
                         rating = review.find('div', class_='ui_column is-9').findChildren('span')
                         rating = str(rating[0]).split('_')[3].split('0')[0]
-                        data_writer.writerow([storeName, storeLoc, reviewerUsername, ratingDate, reviewText, rating])
+                        #data_writer.writerow([storeName, storeLoc, reviewerUsername, ratingDate, reviewText, rating])
                         reviewCount += 1
                         print("Comment #" , reviewCount , " for " , url)
+                        data["reviews"].append({
+                            "storeName" : storeName,
+                            "date" : ratingDate,
+                            "storeLoc" : storeLoc,
+                            "reviewer" : reviewerUsername,
+                            "reviewText" : reviewText,
+                            "rating" : rating
+                        })
                         if reviewCount >= maxNoReviews:
                             break
-            except:
-                pass
+            except: # in case error in crawling the data
+                data["success"] = False
+                data["reviews"] = []
+                return data
             #Go to next page if exists
             try:
                 unModifiedUrl = str(soup.find('a', class_ = 'nav next ui_button primary',href=True)['href'])
                 url = 'https://www.tripadvisor.com' + unModifiedUrl
             except:
                 reviewCount = maxNoReviews
+
+        return data
